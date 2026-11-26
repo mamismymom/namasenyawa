@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Senyawa Sejodoh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #090412;
+      --bg-mid: #16092b;
+      --bg-accent: #27104a;
+      --card-bg: rgba(24, 13, 44, 0.72);
+      --card-border: rgba(192, 132, 252, 0.22);
+      --surface: rgba(255, 255, 255, 0.045);
+      --surface-hover: rgba(168, 85, 247, 0.14);
+      --purple-glow: #a855f7;
+      --purple-soft: #d8b4fe;
+      --fuchsia-accent: #d946ef;
+      --text-main: #f8fafc;
+      --text-muted: #b8a8d8;
+      --correct: #22c55e;
+      --wrong: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100svh;
+      background: radial-gradient(circle at 18% 20%, #2e1065 0%, transparent 45%),
+                  radial-gradient(circle at 82% 80%, #4a044e 0%, transparent 45%),
+                  linear-gradient(145deg, var(--bg-deep) 0%, var(--bg-mid) 52%, var(--bg-accent) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text-main);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Elemen Dekoratif Latar (Ambient Orbs & Grid) */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(192, 132, 252, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(192, 132, 252, 0.04) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(75px);
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 0;
+      animation: floatOrb 12s ease-in-out infinite alternate;
+    }
+
+    .orb-1 {
+      width: 280px;
+      height: 280px;
+      background: #7e22ce;
+      top: -70px;
+      left: -60px;
+    }
+
+    .orb-2 {
+      width: 320px;
+      height: 320px;
+      background: #a21caf;
+      bottom: -90px;
+      right: -70px;
+      animation-delay: -5s;
+    }
+
+    /* Kartu Utama Glassmorphism */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      min-height: 470px;
+      background: var(--card-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--card-border);
+      border-radius: 26px;
+      padding: 36px 28px;
+      box-shadow:
+        0 25px 60px rgba(4, 1, 12, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card.shake {
+      animation: shakeCard 0.36s ease;
+    }
+
+    /* Bilah Progres Waktu di Sisi Atas Kartu */
+    .timer-bar-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .timer-bar-wrap.visible {
+      opacity: 1;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--purple-glow), var(--fuchsia-accent));
+      transform-origin: left;
+      transition: width 1s linear, background 0.3s ease;
+    }
+
+    .timer-bar-fill.urgent {
+      background: linear-gradient(90deg, #fb7185, var(--wrong));
+    }
+
+    .screen {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .screen.active {
+      display: flex;
+      animation: screenEnter 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Layar Awal */
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--purple-soft);
+      background: rgba(168, 85, 247, 0.14);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--fuchsia-accent);
+      box-shadow: 0 0 10px var(--fuchsia-accent);
+      animation: pulseDot 1.8s infinite;
+    }
+
+    .title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 15%, #e9d5ff 55%, #e879f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    .instruction {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      letter-spacing: 0.03em;
+    }
+
+    .input-name {
+      width: 100%;
+      max-width: 330px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-main);
+      background: rgba(11, 5, 22, 0.65);
+      border: 1.5px solid rgba(192, 132, 252, 0.28);
+      border-radius: 14px;
+      outline: none;
+      text-align: center;
+      margin-bottom: 12px;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+
+    .input-name::placeholder {
+      color: rgba(184, 168, 216, 0.5);
+    }
+
+    .input-name:focus {
+      border-color: var(--purple-glow);
+      background: rgba(18, 9, 36, 0.85);
+      box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.22);
+    }
+
+    .error-msg {
+      color: #fda4af;
+      font-size: 0.84rem;
+      font-weight: 500;
+      min-height: 22px;
+      margin-bottom: 10px;
+    }
+
+    /* Tombol Utama Elegan dengan Efek Kilau */
+    .btn-primary {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #c026d3 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 13px 40px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 28px rgba(147, 51, 234, 0.42);
+      transition: transform 0.18s ease, box-shadow 0.22s ease, filter 0.22s ease;
+    }
+
+    .btn-primary::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 65%;
+      height: 100%;
+      background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      transition: left 0.55s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(168, 85, 247, 0.55);
+      filter: brightness(1.06);
+    }
+
+    .btn-primary:hover::after {
+      left: 140%;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.96);
+    }
+
+    /* Layar Countdown & Nomor Soal */
+    .big-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 15%, #d8b4fe 60%, #e879f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 22px rgba(168, 85, 247, 0.45));
+      animation: popIn 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Header Soal: Timer Kiri Atas & Indikator Soal Kanan Atas */
+    .timer-badge {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      background: rgba(168, 85, 247, 0.15);
+      color: #f3e8ff;
+      border: 1.5px solid rgba(192, 132, 252, 0.35);
+      font-size: 1.15rem;
+      font-weight: 700;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.18);
+      transition: all 0.25s ease;
+    }
+
+    .timer-badge.urgent {
+      background: rgba(244, 63, 94, 0.2);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.6);
+      box-shadow: 0 0 18px rgba(244, 63, 94, 0.35);
+      animation: pulseUrgent 0.8s infinite;
+    }
+
+    .question-counter {
+      position: absolute;
+      top: 24px;
+      right: 22px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 10px;
+    }
+
+    .question-prompt {
+      margin-top: 34px;
+      font-size: 0.96rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .formula-box {
+      display: inline-block;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(145deg, rgba(126, 34, 206, 0.35), rgba(88, 28, 135, 0.25));
+      color: #ffffff;
+      border: 1.5px solid rgba(216, 180, 254, 0.45);
+      padding: 12px 34px;
+      border-radius: 16px;
+      font-size: 1.95rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+      box-shadow:
+        0 8px 26px rgba(126, 34, 206, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      animation: formulaPop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .formula-box sub {
+      font-size: 0.62em;
+      color: var(--purple-soft);
+    }
+
+    /* Area Menjodohkan */
+    .match-area {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding: 6px 2px;
+    }
+
+    .match-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 44%;
+      z-index: 2;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--surface);
+      border: 1.5px solid rgba(192, 132, 252, 0.2);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0;
+      animation: slideUpStagger 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      transition: transform 0.18s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .option-row:hover {
+      background: var(--surface-hover);
+      border-color: rgba(216, 180, 254, 0.55);
+      transform: translateY(-2px);
+    }
+
+    .option-row.selected {
+      background: rgba(168, 85, 247, 0.24);
+      border-color: var(--purple-soft);
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.32);
+    }
+
+    .col-right .option-row {
+      flex-direction: row-reverse;
+    }
+
+    .option-label {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .dot {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--purple-soft);
+      border-radius: 7px;
+      background: rgba(15, 7, 29, 0.85);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .option-row.selected .dot {
+      background: linear-gradient(135deg, var(--purple-glow), var(--fuchsia-accent));
+      border-color: #ffffff;
+      transform: scale(1.16);
+      box-shadow: 0 0 14px rgba(217, 70, 239, 0.75);
+    }
+
+    /* Overlay Pop Feedback */
+    .feedback-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(9, 4, 18, 0.62);
+      backdrop-filter: blur(4px);
+      z-index: 10;
+    }
+
+    .feedback-overlay.show {
+      display: flex;
+    }
+
+    .feedback-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 700;
+      padding: 16px 38px;
+      border-radius: 20px;
+      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.28);
+      animation: popFeedback 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .feedback-text.correct {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+      box-shadow: 0 12px 40px rgba(34, 197, 94, 0.5);
+    }
+
+    .feedback-text.wrong {
+      background: linear-gradient(135deg, #be123c, #f43f5e);
+      box-shadow: 0 12px 40px rgba(244, 63, 94, 0.5);
+    }
+
+    /* Layar Hasil (Format Terpisah Sesuai Permintaan) */
+    .result-heading {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 10%, #e9d5ff 55%, #f0abfc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    .score-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+
+    .score-box {
+      width: 100%;
+      max-width: 220px;
+      padding: 20px 24px;
+      background: linear-gradient(145deg, rgba(126, 34, 206, 0.32), rgba(217, 70, 239, 0.14));
+      border: 1.5px solid rgba(216, 180, 254, 0.45);
+      border-radius: 20px;
+      margin-bottom: 16px;
+      box-shadow:
+        0 14px 36px rgba(126, 34, 206, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 6px;
+      animation: scorePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .score-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+      text-shadow: 0 0 24px rgba(192, 132, 252, 0.65);
+    }
+
+    .score-total {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: var(--purple-soft);
+    }
+
+    .result-sub {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      min-height: 20px;
+    }
+
+    /* Animasi */
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(28px, 24px) scale(1.12); }
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    @keyframes screenEnter {
+      0% { opacity: 0; transform: translateY(14px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.45); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes formulaPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes slideUpStagger {
+      0% { opacity: 0; transform: translateY(14px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes popFeedback {
+      0% { transform: scale(0.35); opacity: 0; }
+      65% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes scorePop {
+      0% { transform: scale(0.65); opacity: 0; }
+      70% { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes pulseUrgent {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes shakeCard {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @keyframes drawLine {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @media (max-width: 440px) {
+      .card { padding: 28px 16px; min-height: 440px; }
+      .title { font-size: 1.95rem; }
+      .option-label { font-size: 0.86rem; }
+      .option-row { padding: 10px 10px; }
+      .formula-box { font-size: 1.6rem; padding: 10px 26px; }
+      .big-text { font-size: 2.8rem; }
+      .feedback-text { font-size: 2.2rem; padding: 14px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div id="quiz-card" class="card">
+    <!-- Progres bar waktu 15 detik -->
+    <div id="timer-bar-wrap" class="timer-bar-wrap">
+      <div id="timer-bar-fill" class="timer-bar-fill"></div>
+    </div>
+
+    <!-- 1. Layar Awal -->
+    <div id="screen-start" class="screen active">
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        Tata Nama Senyawa Biner Ionik
+      </div>
+      <h1 class="title">Senyawa Sejodoh</h1>
+      <p class="instruction">Nama_Kelas</p>
+      <input type="text" id="input-nama" class="input-name" placeholder="Contoh: Budi_X1" autocomplete="off" />
+      <div id="error-msg" class="error-msg"></div>
+      <button id="btn-start" class="btn-primary">Mulai!</button>
+    </div>
+
+    <!-- 2. Layar Countdown / Nomor Soal -->
+    <div id="screen-transition" class="screen">
+      <div id="transition-text" class="big-text">Bersiap!</div>
+    </div>
+
+    <!-- 3. Layar Soal -->
+    <div id="screen-quiz" class="screen">
+      <div id="timer-badge" class="timer-badge">15</div>
+      <div id="question-counter" class="question-counter">1 / 5</div>
+      <p class="question-prompt">Nama dari senyawa berikut adalah:</p>
+      <div id="formula-box" class="formula-box">NaCl</div>
+
+      <div id="match-area" class="match-area">
+        <svg id="match-svg" class="match-svg"></svg>
+        <div id="col-left" class="col col-left"></div>
+        <div id="col-right" class="col col-right"></div>
+      </div>
+
+      <div id="feedback-overlay" class="feedback-overlay">
+        <div id="feedback-text" class="feedback-text">Benar!</div>
+      </div>
+    </div>
+
+    <!-- 4. Layar Hasil -->
+    <div id="screen-result" class="screen">
+      <h2 id="result-heading" class="result-heading">Luar biasa!</h2>
+      <p class="score-label">Skormu:</p>
+      <div class="score-box">
+        <span id="score-number" class="score-number">0</span>
+        <span class="score-total">/ 5</span>
+      </div>
+      <p id="save-status" class="result-sub">Menyimpan skor...</p>
+      <button id="btn-retry" class="btn-primary">Ulangi</button>
+    </div>
+  </div>
+
+  <script>
+    // Ganti dengan URL Web App Google Apps Script Anda
+    const GAS_URL = "PASTE_URL_WEB_APP_GAS_ANDA_DI_SINI";
+
+    // 5 Soal Tata Nama Senyawa Biner Ionik (Pola penjodohan berbeda-beda)
+    const questions = [
+      {
+        formula: "NaCl",
+        left: ["Natrium", "Kalium", "Kalsium"],
+        right: ["Fluorida", "Klorida", "Karbida"],
+        answerLeft: 0,  // Natrium
+        answerRight: 1  // Klorida (Pola: 1 -> 2)
+      },
+      {
+        formula: "MgO",
+        left: ["Kalsium", "Magnesium", "Aluminium"],
+        right: ["Oksida", "Sulfida", "Nitrida"],
+        answerLeft: 1,  // Magnesium
+        answerRight: 0  // Oksida (Pola: 2 -> 1)
+      },
+      {
+        formula: "Al<sub>2</sub>S<sub>3</sub>",
+        left: ["Natrium", "Berilium", "Aluminium"],
+        right: ["Silisida", "Fosfida", "Sulfida"],
+        answerLeft: 2,  // Aluminium
+        answerRight: 2  // Sulfida (Pola: 3 -> 3)
+      },
+      {
+        formula: "CaF<sub>2</sub>",
+        left: ["Kalsium", "Kalium", "Stronsium"],
+        right: ["Fosfida", "Bromida", "Fluorida"],
+        answerLeft: 0,  // Kalsium
+        answerRight: 2  // Fluorida (Pola: 1 -> 3)
+      },
+      {
+        formula: "K<sub>3</sub>N",
+        left: ["Litium", "Kalsium", "Kalium"],
+        right: ["Nitrida", "Oksida", "Iodida"],
+        answerLeft: 2,  // Kalium
+        answerRight: 0  // Nitrida (Pola: 3 -> 1)
+      }
+    ];
+
+    let studentName = "";
+    let currentIndex = 0;
+    let score = 0;
+    let timerInterval = null;
+    let timeLeft = 15;
+    let selectedSide = null;
+    let selectedIndex = null;
+    let isLocked = false;
+    let isTransitioning = false;
+    let hasSubmitted = false;
+
+    // Elemen DOM
+    const quizCard = document.getElementById("quiz-card");
+    const timerBarWrap = document.getElementById("timer-bar-wrap");
+    const timerBarFill = document.getElementById("timer-bar-fill");
+
+    const screens = {
+      start: document.getElementById("screen-start"),
+      transition: document.getElementById("screen-transition"),
+      quiz: document.getElementById("screen-quiz"),
+      result: document.getElementById("screen-result")
+    };
+
+    const inputNama = document.getElementById("input-nama");
+    const errorMsg = document.getElementById("error-msg");
+    const btnStart = document.getElementById("btn-start");
+    const btnRetry = document.getElementById("btn-retry");
+    const transitionText = document.getElementById("transition-text");
+    const timerBadge = document.getElementById("timer-badge");
+    const questionCounter = document.getElementById("question-counter");
+    const formulaBox = document.getElementById("formula-box");
+    const colLeft = document.getElementById("col-left");
+    const colRight = document.getElementById("col-right");
+    const matchArea = document.getElementById("match-area");
+    const matchSvg = document.getElementById("match-svg");
+    const feedbackOverlay = document.getElementById("feedback-overlay");
+    const feedbackText = document.getElementById("feedback-text");
+    const resultHeading = document.getElementById("result-heading");
+    const scoreNumber = document.getElementById("score-number");
+    const saveStatus = document.getElementById("save-status");
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.remove("active"));
+      screens[name].classList.add("active");
+      timerBarWrap.classList.toggle("visible", name === "quiz");
+    }
+
+    function showTransition(text, durationMs) {
+      return new Promise(resolve => {
+        showScreen("transition");
+        transitionText.textContent = text;
+        transitionText.style.animation = "none";
+        void transitionText.offsetWidth;
+        transitionText.style.animation = "popIn 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+        setTimeout(resolve, durationMs);
+      });
+    }
+
+    async function beginQuiz() {
+      if (isTransitioning) return;
+
+      const val = inputNama.value.trim();
+      if (!val) {
+        errorMsg.textContent = "Isi Nama_Kelas terlebih dahulu!";
+        inputNama.focus();
+        quizCard.classList.remove("shake");
+        void quizCard.offsetWidth;
+        quizCard.classList.add("shake");
+        return;
+      }
+
+      isTransitioning = true;
+      errorMsg.textContent = "";
+      studentName = val;
+      currentIndex = 0;
+      score = 0;
+      hasSubmitted = false;
+
+      await showTransition("Bersiap!", 900);
+      await showTransition("3", 750);
+      await showTransition("2", 750);
+      await showTransition("1", 750);
+      await showTransition("Mulai!", 750);
+
+      isTransitioning = false;
+      startQuestionFlow();
+    }
+
+    btnStart.addEventListener("click", beginQuiz);
+    inputNama.addEventListener("keydown", e => {
+      if (e.key === "Enter") beginQuiz();
+    });
+
+    btnRetry.addEventListener("click", () => {
+      clearInterval(timerInterval);
+      currentIndex = 0;
+      score = 0;
+      hasSubmitted = false;
+      isLocked = false;
+      isTransitioning = false;
+      showScreen("start");
+      inputNama.focus();
+    });
+
+    async function startQuestionFlow() {
+      if (currentIndex >= questions.length) {
+        finishQuiz();
+        return;
+      }
+
+      await showTransition(`Nomor ${currentIndex + 1}`, 950);
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      isLocked = false;
+      selectedSide = null;
+      selectedIndex = null;
+      matchSvg.innerHTML = "";
+      feedbackOverlay.classList.remove("show");
+
+      questionCounter.textContent = `${currentIndex + 1} / ${questions.length}`;
+      formulaBox.innerHTML = q.formula;
+      formulaBox.style.animation = "none";
+      void formulaBox.offsetWidth;
+      formulaBox.style.animation = "formulaPop 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+
+      colLeft.innerHTML = "";
+      colRight.innerHTML = "";
+
+      q.left.forEach((label, idx) => {
+        const row = createOptionRow("left", idx, label);
+        row.style.animationDelay = `${idx * 75}ms`;
+        colLeft.appendChild(row);
+      });
+
+      q.right.forEach((label, idx) => {
+        const row = createOptionRow("right", idx, label);
+        row.style.animationDelay = `${idx * 75 + 40}ms`;
+        colRight.appendChild(row);
+      });
+
+      showScreen("quiz");
+      startTimer();
+    }
+
+    function createOptionRow(side, index, label) {
+      const row = document.createElement("div");
+      row.className = "option-row";
+      row.dataset.side = side;
+      row.dataset.index = index;
+
+      const textSpan = document.createElement("span");
+      textSpan.className = "option-label";
+      textSpan.textContent = label;
+
+      const dot = document.createElement("div");
+      dot.className = "dot";
+
+      row.appendChild(textSpan);
+      row.appendChild(dot);
+
+      row.addEventListener("click", () => handleSelect(side, index, row));
+      return row;
+    }
+
+    function handleSelect(side, index, rowEl) {
+      if (isLocked) return;
+
+      if (selectedSide === null || selectedSide === side) {
+        document.querySelectorAll(`.option-row[data-side="${side}"]`)
+          .forEach(el => el.classList.remove("selected"));
+        rowEl.classList.add("selected");
+        selectedSide = side;
+        selectedIndex = index;
+        return;
+      }
+
+      isLocked = true;
+      clearInterval(timerInterval);
+      rowEl.classList.add("selected");
+
+      const leftIdx = side === "left" ? index : selectedIndex;
+      const rightIdx = side === "right" ? index : selectedIndex;
+
+      const q = questions[currentIndex];
+      const isCorrect = (leftIdx === q.answerLeft && rightIdx === q.answerRight);
+
+      drawLine(leftIdx, rightIdx, isCorrect ? "#22c55e" : "#f43f5e");
+
+      if (isCorrect) {
+        score++;
+      } else {
+        quizCard.classList.remove("shake");
+        void quizCard.offsetWidth;
+        quizCard.classList.add("shake");
+      }
+
+      setTimeout(() => {
+        feedbackText.textContent = isCorrect ? "Benar!" : "Salah!";
+        feedbackText.className = `feedback-text ${isCorrect ? "correct" : "wrong"}`;
+        feedbackOverlay.classList.add("show");
+      }, 220);
+
+      setTimeout(() => {
+        currentIndex++;
+        startQuestionFlow();
+      }, 1250);
+    }
+
+    function drawLine(leftIdx, rightIdx, color) {
+      const leftDot = colLeft.querySelector(`.option-row[data-index="${leftIdx}"] .dot`);
+      const rightDot = colRight.querySelector(`.option-row[data-index="${rightIdx}"] .dot`);
+      const areaRect = matchArea.getBoundingClientRect();
+      const lRect = leftDot.getBoundingClientRect();
+      const rRect = rightDot.getBoundingClientRect();
+
+      const x1 = lRect.left + lRect.width / 2 - areaRect.left;
+      const y1 = lRect.top + lRect.height / 2 - areaRect.top;
+      const x2 = rRect.left + rRect.width / 2 - areaRect.left;
+      const y2 = rRect.top + rRect.height / 2 - areaRect.top;
+      const length = Math.hypot(x2 - x1, y2 - y1);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", x1);
+      line.setAttribute("y1", y1);
+      line.setAttribute("x2", x2);
+      line.setAttribute("y2", y2);
+      line.setAttribute("stroke", color);
+      line.setAttribute("stroke-width", "4.5");
+      line.setAttribute("stroke-linecap", "round");
+      line.style.filter = `drop-shadow(0 0 8px ${color})`;
+      line.style.strokeDasharray = length;
+      line.style.strokeDashoffset = length;
+      line.style.animation = "drawLine 0.28s ease-out forwards";
+      matchSvg.appendChild(line);
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 15;
+      timerBadge.textContent = timeLeft;
+      timerBadge.classList.remove("urgent");
+      timerBarFill.classList.remove("urgent");
+      timerBarFill.style.transition = "none";
+      timerBarFill.style.width = "100%";
+      void timerBarFill.offsetWidth;
+      timerBarFill.style.transition = "width 1s linear, background 0.3s ease";
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerBadge.textContent = timeLeft;
+        timerBarFill.style.width = `${(timeLeft / 15) * 100}%`;
+
+        if (timeLeft <= 5) {
+          timerBadge.classList.add("urgent");
+          timerBarFill.classList.add("urgent");
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          isLocked = true;
+          currentIndex++;
+          startQuestionFlow();
+        }
+      }, 1000);
+    }
+
+    function finishQuiz() {
+      showScreen("result");
+
+      if (score === 5) {
+        resultHeading.textContent = "Luar biasa!";
+      } else if (score >= 3) {
+        resultHeading.textContent = "Tidak buruk!";
+      } else {
+        resultHeading.textContent = "Ayo belajar lagi!";
+      }
+
+      scoreNumber.textContent = score;
+      saveStatus.textContent = "Menyimpan skor...";
+      sendScoreToGAS();
+    }
+
+    async function sendScoreToGAS() {
+      if (hasSubmitted) return;
+      hasSubmitted = true;
+
+      if (!GAS_URL || GAS_URL.includes("PASTE_URL")) {
+        saveStatus.textContent = "Mode demo (URL GAS belum dipasang).";
+        return;
+      }
+
+      try {
+        await fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            nama: studentName,
+            skor: `${score}/5`
+          })
+        });
+        saveStatus.textContent = "Skor berhasil dikirim!";
+      } catch (err) {
+        saveStatus.textContent = "Gagal mengirim skor. Periksa koneksi.";
+      }
+    }
+  </script>
+</body>
+</html>
